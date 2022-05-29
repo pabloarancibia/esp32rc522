@@ -2,6 +2,10 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+//RFID CONF
 const int pinRST = 15;  // Pin RST del módulo RC522
 const int pinSDA = 5; // pin SDA del módulo RC522
 const int buzzer = 27;
@@ -10,13 +14,61 @@ const int led = 2;//Led onboard del esp32
 MFRC522 rfid(pinSDA, pinRST);
 String UIDCaracteres;//UID de tarjeta rfid
 
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+//RFID WIFI MQTT SETUP
 void setup() {
   pinMode(buzzer, OUTPUT);
   pinMode(led, OUTPUT);
   SPI.begin();
   rfid.PCD_Init();//Inicilializar lector
   Serial.begin(115200); // Velocidad del terminal serial
-}
+
+  //wifi
+  const char* ssid = "ZulemayPablo";
+  const char* password = "P4bl0yZul3";
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {   
+      Serial.println("Connecting to WiFi..");
+      Serial.println(WiFi.status());
+      delay(1000);
+  }
+ 
+  Serial.println("Connected to the WiFi network");
+  Serial.println(WiFi.localIP());
+
+  //mqtt
+  const char* mqttServer = "192.168.2.120";
+  const int mqttPort = 1883;
+  const char* mqttUser = "admin";
+  const char* mqttPassword = "4dm1n/t3st";
+
+  client.setServer(mqttServer, mqttPort);
+  
+  while (!client.connected()) {
+      Serial.println("Connecting to MQTT...");
+  
+      if (client.connect("ESP32Client", mqttUser, mqttPassword )) {
+  
+        Serial.println("connected");  
+  
+      } else {
+  
+        Serial.print("failed with state ");
+        Serial.print(client.state());
+        delay(2000);
+  
+      }
+  }
+
+    
+  client.publish("esp/test", "Hello from ESP32");
+  }
 
 //Sonido del buzzer
 void bip(int largo, int toques){
@@ -39,6 +91,7 @@ void loop() {
         {
            UIDCaracteres += rfid.uid.uidByte[i];
         }
+        client.publish("esp/test", "Tarjeta Leída" );
         Serial.print(UIDCaracteres);
         Serial.println();
         Serial.println("Tarjeta Correcta");
