@@ -35,6 +35,35 @@ void bip(int largo, int toques){
   } 
     
 }
+void mqttConnect(){
+  //mqtt
+  const char* mqttServer = "192.168.2.101";
+  const int mqttPort = 1883;
+  const char* mqttUser = "admin";
+  const char* mqttPassword = "4dm1n/t3st";
+
+  client.setServer(mqttServer, mqttPort);
+  
+  while (!client.connected()) {
+      Serial.println("Connecting to MQTT...");
+  
+      // if (client.connect("ESP32Client", mqttUser, mqttPassword )) {
+      if (client.connect("esp32")) {
+  
+        Serial.println("connected");  
+  
+      } else {
+  
+        Serial.print("failed with state ");
+        Serial.print(client.state());
+        delay(2000);
+  
+      }
+  }
+
+    
+  client.publish("esp/test", "Hello from ESP32+RFIDrc522");
+}
 
 //RFID WIFI MQTT SETUP
 void setup() {
@@ -71,39 +100,19 @@ void setup() {
   ledblink(5000);
   bip(3000,2);
 
-  //mqtt
-  const char* mqttServer = "192.168.2.106";
-  const int mqttPort = 1883;
-  const char* mqttUser = "admin";
-  const char* mqttPassword = "4dm1n/t3st";
-
-  client.setServer(mqttServer, mqttPort);
-  
-  while (!client.connected()) {
-      Serial.println("Connecting to MQTT...");
-  
-      // if (client.connect("ESP32Client", mqttUser, mqttPassword )) {
-      if (client.connect("esp32")) {
-  
-        Serial.println("connected");  
-  
-      } else {
-  
-        Serial.print("failed with state ");
-        Serial.print(client.state());
-        delay(2000);
-  
-      }
-  }
-
-    
-  client.publish("esp/test", "Hello from ESP32");
+  //llamar a coneccion de mqtt
+  mqttConnect();
   }
 
 
 
 
 void loop() {
+  while (!client.connected()) {
+    Serial.print(client.state());
+    mqttConnect();
+  }
+  
   if (rfid.PICC_IsNewCardPresent())  // Hay una nueva tarjeta presente
     {
       if (rfid.PICC_ReadCardSerial())  // Leemos el contenido de la tarjeta
