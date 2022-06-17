@@ -4,6 +4,7 @@
 
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <env.h>
 
 //RFID CONF
 const int pinRST = 15;  // Pin RST del módulo RC522
@@ -37,10 +38,10 @@ void bip(int largo, int toques){
 }
 void mqttConnect(){
   //mqtt
-  const char* mqttServer = "192.168.2.101";
-  const int mqttPort = 1883;
-  const char* mqttUser = "admin";
-  const char* mqttPassword = "4dm1n/t3st";
+  const char* mqttServer = MQTT_SERVER;
+  const int mqttPort = MQTT_PORT;
+  const char* mqttUser = MQTT_USER;
+  const char* mqttPassword = MQTT_PASSWORD;
 
   client.setServer(mqttServer, mqttPort);
   
@@ -74,8 +75,8 @@ void setup() {
   Serial.begin(115200); // Velocidad del terminal serial
 
   //wifi
-  const char* ssid = "nodemcu";
-  //const char* password = "1ns3gur4";
+  const char* ssid = WIFI_LOCAL_SSID;
+  //const char* password = WIFI_LOCAL_PASS;
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid);
