@@ -14,6 +14,7 @@ const int led = 2;//Led onboard del esp32
 
 MFRC522 rfid(pinSDA, pinRST);
 String UIDCaracteres;//UID de tarjeta rfid
+String topic_str = NODO_TOPIC;//topic
 
 
 WiFiClient espClient;
@@ -49,10 +50,15 @@ void mqttConnect(){
       Serial.println("Connecting to MQTT...");
   
       // if (client.connect("ESP32Client", mqttUser, mqttPassword )) {
-      if (client.connect("esp32")) {
-  
-        Serial.println("connected");  
-  
+      if (client.connect(NODO_NOMBRE)) {
+
+        Serial.print("conectado a mqtt en: ");
+        Serial.print(MQTT_SERVER);
+        Serial.print(":");
+        Serial.print(MQTT_PORT);
+        Serial.println();
+
+        
       } else {
   
         Serial.print("failed with state ");
@@ -99,7 +105,7 @@ void setup() {
   Serial.print("ESP Board MAC Address:  ");
   Serial.println(WiFi.macAddress());
   ledblink(5000);
-  bip(3000,2);
+  bip(200,2);//conexion wifi exitosa
 
   //llamar a coneccion de mqtt
   mqttConnect();
@@ -118,19 +124,31 @@ void loop() {
     {
       if (rfid.PICC_ReadCardSerial())  // Leemos el contenido de la tarjeta
       {
-        Serial.println("UID de la tarjeta: ");
+        // Serial.println("UID de la tarjeta: ");
         for (byte i = 0; i < rfid.uid.size; i++)
         {
            UIDCaracteres += rfid.uid.uidByte[i];
         }
-        client.publish("esp/test", "Tarjeta Leída" );
-        Serial.print(UIDCaracteres);
-        Serial.println();
-        Serial.println("Tarjeta Correcta");
+
+        String message = "{tajeta:"+UIDCaracteres+",nodo:"+NODO_NOMBRE+",estado:"+NODO_ESTADO+"}";
+        
+        char message_buff[100];
+        message.toCharArray(message_buff,message.length()+1);
+
+        char topic_buff[100];
+        topic_str.toCharArray(topic_buff,topic_str.length()+1);
+
+
+        client.publish(topic_buff,message_buff,2);
+        Serial.println(message);
+        // Serial.println();
+        // Serial.println("Tarjeta Correcta");
         digitalWrite(led, HIGH);
         bip(500, 1);
         digitalWrite(led, LOW);
         delay(800);//delay para proxima lectura
+
+        
       }else{
         Serial.println("Error en lectura");
         bip(150,3);//bip error
