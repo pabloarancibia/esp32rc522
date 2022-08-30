@@ -51,36 +51,35 @@ void bip(int largo, int toques){
     
 }
 
-// publicación cuando detecta una tarjeta
+// callback cuando lee tarjeta 
+// envía el publish
 void PublishMqtt() {
-  // while (!client.connected()) {
-  //   Serial.print(client.state());
-  //   mqttConnect();
-  // }
   
-  if (rfid.PICC_IsNewCardPresent())  // Hay una nueva tarjeta presente
-    {
+  
       if (rfid.PICC_ReadCardSerial())  // Leemos el contenido de la tarjeta
       {
-        // Serial.println("UID de la tarjeta: ");
+        UIDCaracteres="";
         for (byte i = 0; i < rfid.uid.size; i++)
         {
            UIDCaracteres += rfid.uid.uidByte[i];
         }
 
+        // Preparo el mensaje 
         String message = "{tajeta:"+UIDCaracteres+",nodo:"+NODO_NOMBRE+",estado:"+NODO_ESTADO+"}";
         
+        // String to char
         char message_buff[100];
         message.toCharArray(message_buff,message.length()+1);
 
+        // topic_str a char
         char topic_buff[100];
         topic_str.toCharArray(topic_buff,topic_str.length()+1);
 
-
+        // publish mensaje
         client.publish(topic_buff,message_buff,2);
+        
+        // led y beep
         Serial.println(message);
-        // Serial.println();
-        // Serial.println("Tarjeta Correcta");
         digitalWrite(led, HIGH);
         bip(500, 1);
         digitalWrite(led, LOW);
@@ -90,10 +89,10 @@ void PublishMqtt() {
       }else{
         Serial.println("Error en lectura");
         bip(150,3);//bip error
-      } 
-    }
-  UIDCaracteres="";  
+      }
+      UIDCaracteres=""; 
 }
+  
 
 // realiza las suscripción a los topic
 void SuscribeMqtt()
@@ -170,7 +169,6 @@ void mqttConnect(){
         Serial.println();
 
         SuscribeMqtt();
-        PublishMqtt();
 
         
       } else {
@@ -229,7 +227,12 @@ void wifi_setup() {
   
   }
 
-
+void RfidRcv(){
+  if (rfid.PICC_IsNewCardPresent())  // Hay una nueva tarjeta presente
+    {
+      PublishMqtt();
+    }
+}
 
 
 
@@ -261,4 +264,5 @@ void setup()
 void loop()
 {
     HandleMqtt();
+    RfidRcv(); //escucha rfid
 }
