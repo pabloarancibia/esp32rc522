@@ -76,7 +76,7 @@ void PublishMqtt() {
         topic_str.toCharArray(topic_buff,topic_str.length()+1);
 
         // publish mensaje
-        client.publish(topic_buff,message_buff,2);
+        client.publish(topic_buff,message_buff);
         
         // led y beep
         Serial.println(message);
