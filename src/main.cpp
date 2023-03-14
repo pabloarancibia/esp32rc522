@@ -65,8 +65,8 @@ void PublishMqtt() {
         }
 
         // Preparo el mensaje 
-        String message = "{tajeta:"+UIDCaracteres+",nodo:"+NODO_NOMBRE+",estado:"+NODO_ESTADO+"}";
-        
+        String message = "{\"tarjeta\":\""+UIDCaracteres+"\",\"nodo\":\""+NODO_NOMBRE+"\",\"estado\":\""+NODO_ESTADO+"\"}";
+      
         // String to char
         char message_buff[100];
         message.toCharArray(message_buff,message.length()+1);
@@ -176,7 +176,9 @@ void mqttConnect(){
         Serial.print("failed with state ");
         Serial.print(client.state());
         Serial.println(" try again in 2 seconds");
+        digitalWrite(led, HIGH);
         delay(2000);
+        digitalWrite(led, LOW);
   
       }
   }
