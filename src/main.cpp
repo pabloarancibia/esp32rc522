@@ -16,8 +16,9 @@ MFRC522 rfid(pinSDA, pinRST);
 String UIDCaracteres;//UID de tarjeta rfid
 
 // NODO CONFIG
-String topic_str = NODO_TOPIC;//topic
-String topic_error = TOPIC_ERROR;//topic
+String topic_str = NODO_TOPIC;//topic para pub
+String topic_error = TOPIC_ERROR;//topic para sub
+String topic_confirm = TOPIC_CONFIRM;//topic para sub
 
 // MQTT CONF
 const char* mqttServer = MQTT_SERVER;
@@ -97,11 +98,23 @@ void PublishMqtt() {
 // realiza las suscripción a los topic
 void SuscribeMqtt()
 {
+
+    // topic error
     char topic_error_buff[100];
     topic_error.toCharArray(topic_error_buff,topic_error.length()+1);
     client.subscribe(topic_error_buff);
+    
     Serial.print("suscripto a topic: ");
     Serial.print(topic_error_buff);
+    Serial.println();
+
+    // topic confirm
+    char topic_confirm_buff[100];
+    topic_confirm.toCharArray(topic_confirm_buff,topic_confirm.length()+1);
+    client.subscribe(topic_confirm_buff);
+    
+    Serial.print("suscripto a topic: ");
+    Serial.print(topic_confirm_buff);
     Serial.println();
 }
 
@@ -121,22 +134,48 @@ void OnMqttReceived(char *topic, byte *payload, unsigned int length)
     Serial.println();
 
     // imprimo en consola topic recibido y topic error configurado en este nodo
+    Serial.println();
+    Serial.print("Topic recibido ");
     Serial.println(topic);
+    Serial.print("Topic error configurado en este nodo ");
     Serial.println(topic_error);
+     Serial.print("Topic confirm configurado en este nodo ");
+    Serial.println(topic_confirm);
+    Serial.println();
+
 
     // paso string a char
     char topic_error_buff[100];
     topic_error.toCharArray(topic_error_buff,topic_error.length()+1);
+    
+    char topic_confirm_buff[100];
+    topic_confirm.toCharArray(topic_confirm_buff,topic_confirm.length()+1);
 
     // comparo si topic recibido es igual a topic configurado en este nodo
     int result = strcmp(topic,topic_error_buff);
     if (result==0)
     {
-      // topic recibido corresponde a este nodo
+      // topic error recibido corresponde a este nodo
+      Serial.println("ERROR");
+      Serial.println();
+
+      // toca 6 veces 
       digitalWrite(led, HIGH);
       bip(150,3);//bip error
       delay(200);
       bip(150,3);//bip error
+      digitalWrite(led, LOW);
+    }
+
+    int result_confirm = strcmp(topic,topic_confirm_buff);
+    if (result_confirm==0)
+    {
+      // topic confirm recibido corresponde a este nodo
+      Serial.println("CONFIRM OK");
+      Serial.println();
+      // Toca 2 veces
+      digitalWrite(led, HIGH);
+      bip(200,2);//bip confirm
       digitalWrite(led, LOW);
     }
 }
@@ -155,17 +194,29 @@ void mqttConnect(){
   client.setServer(mqttServer, mqttPort);
   
   while (!client.connected()) {
-      Serial.println("Connecting to MQTT...");
+      Serial.println("Connecting to MQTT...Server: ");
+      Serial.print(mqttServer);
+      Serial.print(" Port: ");
+      Serial.print(mqttPort);
+      Serial.print(" User: ");
+      Serial.print(mqttUser);
+      Serial.print(" Nombre: ");
+      Serial.print(NODO_NOMBRE);
+      Serial.println();
   
       // if (client.connect("ESP32Client", mqttUser, mqttPassword )) {
-      if (client.connect(NODO_NOMBRE)) {
+      if (client.connect(NODO_NOMBRE,mqttUser, mqttPassword)) {
 
         
 
-        Serial.print("conectado a mqtt en: ");
+        Serial.print("CONECTADO a mqtt en: Server: ");
         Serial.print(MQTT_SERVER);
-        Serial.print(":");
+        Serial.print(" Port:");
         Serial.print(MQTT_PORT);
+        Serial.print(" User:");
+        Serial.print(mqttUser);
+        Serial.print(" Nombre:");
+        Serial.print(NODO_NOMBRE);
         Serial.println();
 
         SuscribeMqtt();
