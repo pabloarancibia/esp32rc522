@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <env.h>
+#include <notes.h>
 
 //RFID CONF
 const int pinRST = 15;  // Pin RST del módulo RC522
@@ -32,8 +33,37 @@ WiFiClient espClient;
 
 PubSubClient client(espClient);
 
+// BUZZER
+String tipo_buzzer = BUZZER;
 
-// LED function
+// DEFINICIONES PARA PASSIVE BUZZER
+int melodia[] = {		// array con las notas de la melodia
+  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
+};
+int duraciones[] = {		// array con la duracion de cada nota
+  4, 8, 8, 4, 4, 4, 4, 4
+};
+int melodia1[] = {		// array con las notas de la melodia
+  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0//, NOTE_B3, NOTE_C4
+};
+int duraciones1[] = {		// array con la duracion de cada nota
+  4, 8, 8, 4, 4, 4//, 4, 4
+};
+int melodia2[] = {		// array con las notas de la melodia
+  NOTE_B3, NOTE_C4
+};
+int duraciones2[] = {		// array con la duracion de cada nota
+  4, 4
+};
+
+
+///////////////////////////FUNCIONES///////////////////
+
+
+/**
+ * LED function
+ * @param largo largo en milisegundos de la luz
+*/
 void ledblink(int largo){
   digitalWrite(led, HIGH);
   delay(largo);
@@ -41,16 +71,61 @@ void ledblink(int largo){
 
 }
 
-// buzzer function
+/**
+ * generic buzzer function 
+ * active or passive
+ * @param largo largo del sonido
+ * @param toques cantidad de toques
+ * ej:bip(200,2)
+*/
 void bip(int largo, int toques){
-  for (int t=0;t<toques;t++){
-    digitalWrite(buzzer, HIGH);
-    delay(largo);
-    digitalWrite(buzzer, LOW);
-    delay(200);//delay entre toques
-  } 
-    
+  if (tipo_buzzer == "activo"){
+    for (int t=0;t<toques;t++){
+      digitalWrite(buzzer, HIGH);//prende 
+      delay(largo); //mantiene encendido
+      digitalWrite(buzzer, LOW);//apaga
+      delay(200);//delay entre toques (apagado)
+    } 
+  }
+  if (tipo_buzzer == "pasivo"){
+    for (int t=0;t<toques;t++) {			// bucle repite 8 veces
+      //int duracion = 1000 / duraciones[i];		// duracion de la nota en milisegundos
+      tone(buzzer, NOTE_C4, largo);	// ejecuta el tono con la duracion
+      //int pausa = duracion * 1.30;			// calcula pausa
+      delay(200);					// demora con valor de pausa
+      noTone(buzzer);				// detiene reproduccion de tono
+      delay(200);					//delay entre toques (apagado)
+    }
+  }    
 }
+void melodyWelcome(){
+  for (int i = 0; i < 8; i++) {			// bucle repite 8 veces
+      int duracion = 1000 / duraciones[i];		// duracion de la nota en milisegundos
+      tone(buzzer, melodia[i], duracion);	// ejecuta el tono con la duracion
+      int pausa = duracion * 1.30;			// calcula pausa
+      delay(pausa);					// demora con valor de pausa
+      noTone(buzzer);				// detiene reproduccion de tono
+    }
+}
+void melodyTapatapita(){
+  for (int i = 0; i < 6; i++) {			// bucle repite 8 veces
+      int duracion = 1000 / duraciones1[i];		// duracion de la nota en milisegundos
+      tone(buzzer, melodia1[i], duracion);	// ejecuta el tono con la duracion
+      int pausa = duracion * 1.30;			// calcula pausa
+      delay(pausa);					// demora con valor de pausa
+      noTone(buzzer);				// detiene reproduccion de tono
+    }
+}
+void melodyTapon(){
+  for (int i = 0; i < 2; i++) {			// bucle repite 8 veces
+      int duracion = 1000 / duraciones2[i];		// duracion de la nota en milisegundos
+      tone(buzzer, melodia2[i], duracion);	// ejecuta el tono con la duracion
+      int pausa = duracion * 1.30;			// calcula pausa
+      delay(pausa);					// demora con valor de pausa
+      noTone(buzzer);				// detiene reproduccion de tono
+    }
+}
+
 
 // callback cuando lee tarjeta 
 // envía el publish
@@ -82,7 +157,12 @@ void PublishMqtt() {
         // led y beep
         Serial.println(message);
         digitalWrite(led, HIGH);
-        bip(500, 1);
+        if (tipo_buzzer=="pasivo" && SOUNDS=="melodias"){
+          melodyTapatapita();
+        }else{
+          bip(500, 1);
+        }
+        
         digitalWrite(led, LOW);
         delay(800);//delay para proxima lectura
 
@@ -90,6 +170,8 @@ void PublishMqtt() {
       }else{
         Serial.println("Error en lectura");
         bip(150,3);//bip error
+        
+        
       }
       UIDCaracteres=""; 
 }
@@ -175,7 +257,11 @@ void OnMqttReceived(char *topic, byte *payload, unsigned int length)
       Serial.println();
       // Toca 2 veces
       digitalWrite(led, HIGH);
-      bip(200,2);//bip confirm
+      if(tipo_buzzer=="pasivo" && SOUNDS=="melodias"){
+        melodyTapon();
+      }else{
+       bip(200,2);//bip confirm
+      }
       digitalWrite(led, LOW);
     }
 }
@@ -260,7 +346,7 @@ void wifi_setup() {
   
 
   while (WiFi.status() != WL_CONNECTED) {   
-      Serial.println("Connecting to WiFi..");
+      Serial.println("Re-Connecting to WiFi..");
       Serial.println(WiFi.status());
       Serial.println(ssid);
       Serial.println();
@@ -275,7 +361,11 @@ void wifi_setup() {
   Serial.print("ESP Board MAC Address:  ");
   Serial.println(WiFi.macAddress());
   ledblink(5000);
-  bip(200,2);//conexion wifi exitosa
+  if (tipo_buzzer=="pasivo" && SOUNDS=="melodias"){
+    melodyWelcome();
+  }else{
+    bip(200,2);//conexion wifi exitosa
+  }
 
   
   }
