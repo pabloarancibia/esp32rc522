@@ -338,7 +338,7 @@ void wifi_setup() {
 
   //wifi
   const char* ssid = WIFI_LOCAL_SSID;
-  //const char* password = WIFI_LOCAL_PASS;
+  const char* passphrase = WIFI_LOCAL_PASS;
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid);
